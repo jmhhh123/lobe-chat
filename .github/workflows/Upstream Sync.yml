@@ -1,34 +1,26 @@
 name: Upstream Sync
 
-permissions:
-    contents: write
-
 on:
-    schedule:
-        - cron: "0 0 * * *"
-    workflow_dispatch:
+  schedule:
+    - cron: '0 ***' # 每小时执行一次
+  workflow_dispatch:
 
 jobs:
-    sync_with_upstream:
-        name: Sync with Upstream
-        runs-on: ubuntu-latest
-        if: ${{ github.event.repository.fork }}
+  sync_from_upstream:
+    name: Sync latest commits from upstream repo
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout target repo
-              uses: actions/checkout@v3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: main
+          repository: Yanyutin753/lobe-chat
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-            - name: Sync Upstream
-              uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
-              with:
-                  target_repo_token: ${{ secrets.GITHUB_TOKEN }}
-                  upstream_sync_repo: Yanyutin753/lobe-chat
-                  upstream_sync_branch: main
-                  target_sync_branch: main
-                  test_mode: false
-
-            - name: Check for Failure
-              if: failure()
-              run: |
-                  echo "[Error] Due to a change in the workflow file of the upstream repository, GitHub has automatically suspended the scheduled automatic update. You need to manually sync your fork."
-                  exit 1
+      - name: Sync upstream changes
+        run: |
+          # Fetch upstream changes
+          git fetch --prune --unshallow upstream
+          # Merge changes into the current branch
